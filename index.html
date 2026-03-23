@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>遇见你，是银河赠予我的糖 ✨</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+        #canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* 界面文字 */
+        .ui-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            text-align: center;
+            pointer-events: none; /* 让点击穿透到3D场景 */
+            transition: opacity 1s;
+        }
+
+        #title {
+            font-size: 28px; color: #ffb3c1;
+            text-shadow: 0 0 20px #ff4d6d;
+            letter-spacing: 4px; animation: glow 2s infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { opacity: 0.8; text-shadow: 0 0 10px #ff4d6d; }
+            50% { opacity: 1; text-shadow: 0 0 30px #ff758c; }
+        }
+
+        #typed-text {
+            margin-top: 40px; font-size: 22px; color: #fff;
+            line-height: 1.8; text-shadow: 0 0 10px rgba(255,255,255,0.8);
+            min-height: 120px;
+        }
+
+        /* 隐藏音乐播放器 */
+        #bgm { display: none; }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<audio id="bgm" loop src="https://music.163.com/song/media/outer/url?id=1411358329.mp3"></audio>
+
+<div class="ui-overlay" id="ui">
+    <div id="title">点击这颗心，开启你的专属银河</div>
+    <div id="typed-text"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    // --- 3D 场景设置 ---
+    let scene, camera, renderer, particles;
+    let heartObj, galaxyObj, isExploded = false;
+    const PARTICLE_COUNT = 8000;
+    const colors = [0xff4d6d, 0xff758c, 0xff85a1, 0xf7cad0, 0xffffff];
+
+    const bgm = document.getElementById('bgm');
+    const ui = document.getElementById('ui');
+    const typedText = document.getElementById('typed-text');
+    const title = document.getElementById('title');
+
+    function init3D() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 150;
+
+        renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        // --- 核心爱心粒子 (3D) ---
+        const heartGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(PARTICLE_COUNT * 3);
+        const sizes = new Float32Array(PARTICLE_COUNT);
+        const vertexColors = new Float32Array(PARTICLE_COUNT * 3);
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            // 参数方程生成3D爱心形状
+            const t = Math.random() * Math.PI * 2;
+            const p = Math.random() * Math.PI * 2;
+            positions[i * 3] = 16 * Math.pow(Math.sin(t), 3); // X
+            positions[i * 3 + 1] = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t); // Y
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 10; // Z (加厚)
+
+            // 粒子属性
+            sizes[i] = Math.random() * 2 + 0.5;
+            const color = new THREE.Color(colors[Math.floor(Math.random() * colors.length)]);
+            vertexColors[i * 3] = color.r;
+            vertexColors[i * 3 + 1] = color.g;
+            vertexColors[i * 3 + 2] = color.b;
+        }
+
+        heartGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        heartGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        heartGeometry.setAttribute('color', new THREE.BufferAttribute(vertexColors, 3));
+
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 1.5,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending, // 让粒子重叠处放光
+            transparent: true,
+            depthWrite: false,
+            sizeAttenuation: true
+        });
+
+        particles = new THREE.Points(heartGeometry, particleMaterial);
+        scene.add(particles);
+        heartObj = particles;
+
+        // --- 背景银河粒子 ---
+        const galaxyGeometry = new THREE.BufferGeometry();
+        const galaxyPositions = new Float32Array(3000 * 3);
+        for(let i=0; i<3000; i++) {
+            galaxyPositions[i*3] = (Math.random() - 0.5) * 1000;
+            galaxyPositions[i*3+1] = (Math.random() - 0.5) * 1000;
+            galaxyPositions[i*3+2] = (Math.random() - 0.5) * 1000;
+        }
+        galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(galaxyPositions, 3));
+        const galaxyMaterial = new THREE.PointsMaterial({ size: 0.5, color: 0x888888, transparent: true, opacity: 0.5 });
+        galaxyObj = new THREE.Points(galaxyGeometry, galaxyMaterial);
+        scene.add(galaxyObj);
+
+        window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // --- 动画循环 ---
+    let time = 0;
+    function animate() {
+        requestAnimationFrame(animate);
+        time += 0.01;
+
+        if (!isExploded) {
+            // 爱心微弱跳动和旋转
+            heartObj.rotation.y += 0.002;
+            heartObj.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
+        } else {
+            // 爆炸穿越特效：让粒子向镜头方向飞行
+            const positions = heartObj.geometry.attributes.position.array;
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                positions[i * 3 + 2] += 2; // Z轴增加 (扑面而来)
+                if (positions[i * 3 + 2] > 200) positions[i * 3 + 2] = -500; // 循环
+            }
+            heartObj.geometry.attributes.position.needsUpdate = true;
+            heartObj.rotation.y += 0.01;
+        }
+
+        galaxyObj.rotation.y += 0.0005;
+        renderer.render(scene, camera);
+    }
+
+    // --- 互动逻辑 ---
+    const script = [
+        "在这个浩瀚的宇宙中...",
+        "你是我唯一的星光 ✨",
+        "我想陪你看遍所有的流星",
+        "也想把这颗心，完完整整地交给你 ❤️"
+    ];
+    let lineIndex = 0;
+
+    function typeWriter(text, i, fnCallback) {
+        if (i < text.length) {
+            typedText.innerHTML = text.substring(0, i+1) +'<span aria-hidden="true">|</span>';
+            setTimeout(() => typeWriter(text, i + 1, fnCallback), 120); // 稍快
+        } else if (typeof fnCallback == 'function') {
+            setTimeout(fnCallback, 1800); // 留出阅读时间
+        }
+    }
+
+    function startTyping() {
+        if (lineIndex < script.length) {
+            typeWriter(script[lineIndex], 0, () => {
+                lineIndex++;
+                startTyping();
+            });
+        }
+    }
+
+    // 初始化并运行
+    init3D();
+    animate();
+
+    // 全屏点击事件
+    document.body.onclick = function() {
+        if (!bgm.paused) return; // 防止重复触发
+
+        // 1. 播放音乐
+        bgm.play();
+        title.style.opacity = '0';
+        
+        // 2. 触发 3D 爆炸穿越
+        isExploded = true;
+        
+        // 3. 开始表白
+        setTimeout(startTyping, 1000); 
+
+        // 手机震动
+        if (navigator.vibrate) navigator.vibrate(200);
+    };
+</script>
+</body>
+</html>
