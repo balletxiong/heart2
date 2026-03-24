@@ -3,54 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>来自银河系的极秘档案 ✨</title>
+    <title>一份特别的宇宙档案 ✨</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: "PingFang SC", sans-serif; }
-        canvas { position: absolute; top: 0; left: 0; }
-
-        /* UI层 */
-        .overlay {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            text-align: center;
-            pointer-events: none;
+        body { margin: 0; overflow: hidden; background: #000; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+        #canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* 覆盖层 */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.8); transition: opacity 1s;
         }
 
-        #hint {
-            color: #ffb3c1; font-size: 20px; letter-spacing: 5px;
-            text-shadow: 0 0 15px #ff4d6d;
-            animation: pulse 2s infinite;
+        #hint-text {
+            color: #ffb3c1; font-size: 22px; letter-spacing: 5px;
+            text-shadow: 0 0 15px #ff4d6d; animation: pulse 2s infinite;
+            cursor: pointer;
         }
 
         #typed-text {
-            margin-top: 30px; font-size: 24px; color: #fff;
-            line-height: 1.8; text-shadow: 0 0 10px rgba(255,255,255,0.8);
-            white-space: pre-line;
+            position: absolute; top: 60%; width: 80%;
+            color: #fff; font-size: 20px; text-align: center;
+            line-height: 1.8; z-index: 101; pointer-events: none;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
+            0%, 100% { opacity: 0.6; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.1); }
         }
 
-        /* 加载层 */
+        /* 加载提示 */
         #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 100; display: flex; 
-            justify-content: center; align-items: center; color: #ff4d6d;
+            position: fixed; top: 10px; width: 100%; text-align: center;
+            color: #444; font-size: 12px; z-index: 102;
         }
     </style>
 </head>
 <body>
 
-<div id="loader">🪐 正在初始化量子纠缠...</div>
+<div id="loader">系统信号对接中...</div>
 
-<div class="overlay">
-    <div id="hint">点 击 屏 幕 接收 讯 号</div>
-    <div id="typed-text"></div>
+<div id="overlay">
+    <div id="hint-text">「 触 碰 屏 幕 接收 讯 号 」</div>
 </div>
+
+<div id="typed-text"></div>
 
 <audio id="bgm" loop src="https://music.163.com/song/media/outer/url?id=1411358329.mp3"></audio>
 
@@ -59,150 +57,122 @@
 <script>
     let scene, camera, renderer, particles, geometry;
     let isExploded = false;
-    let particlePositions = [];
-    const PARTICLE_COUNT = 30000; // 粒子数量：三万个（震撼感核心）
+    let particleData = [];
+    const COUNT = 15000; // 优化粒子数量，兼顾震撼与流畅
 
-    const bgm = document.getElementById('bgm');
-    const hint = document.getElementById('hint');
-    const typedText = document.getElementById('typed-text');
+    // 确保页面加载完成后执行
+    window.onload = function() {
+        document.getElementById('loader').innerText = "信号已锁定，请点击";
+    };
 
-    // 1. 初始化场景
-    function init() {
+    function initSystem() {
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
         camera.position.z = 150;
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        // 2. 创建粒子
         geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(PARTICLE_COUNT * 3);
-        const colors = new Float32Array(PARTICLE_COUNT * 3);
+        const positions = new Float32Array(COUNT * 3);
+        const colors = new Float32Array(COUNT * 3);
 
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-            // 初始状态：汇聚在中心的奇点（稍带爱心轮廓）
+        for(let i=0; i<COUNT; i++) {
+            // 初始：汇聚成一个跳动的奇点
             const t = Math.random() * Math.PI * 2;
-            const r = Math.pow(Math.random(), 0.5) * 10; 
-            
-            // 3D爱心公式
             const x = 16 * Math.pow(Math.sin(t), 3);
             const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-            const z = (Math.random() - 0.5) * 15;
+            
+            positions[i*3] = x * 0.1;
+            positions[i*3+1] = y * 0.1;
+            positions[i*3+2] = (Math.random()-0.5) * 5;
 
-            positions[i*3] = x * (r/10);
-            positions[i*3+1] = y * (r/10);
-            positions[i*3+2] = z * (r/10);
-
-            // 存储目标爆炸位置
-            particlePositions.push({
-                vx: (Math.random() - 0.5) * 15,
-                vy: (Math.random() - 0.5) * 15,
-                vz: Math.random() * 20 + 5 // 向镜头飞来
+            // 存储爆炸向量
+            particleData.push({
+                vx: (Math.random()-0.5) * 12,
+                vy: (Math.random()-0.5) * 12,
+                vz: Math.random() * 15 + 2
             });
 
-            // 渐变粉紫色系
-            const color = new THREE.Color();
-            color.setHSL(0.95 + Math.random() * 0.05, 0.8, 0.5 + Math.random() * 0.3);
-            colors[i*3] = color.r;
-            colors[i*3+1] = color.g;
-            colors[i*3+2] = color.b;
+            const col = new THREE.Color();
+            col.setHSL(0.95, 0.8, 0.5 + Math.random()*0.3);
+            colors[i*3] = col.r; colors[i*3+1] = col.g; colors[i*3+2] = col.b;
         }
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
         const material = new THREE.PointsMaterial({
-            size: 1.2,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            opacity: 0.8
+            size: 1.5, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true
         });
 
         particles = new THREE.Points(geometry, material);
         scene.add(particles);
 
-        document.getElementById('loader').style.display = 'none';
+        animate();
     }
 
-    // 3. 动画循环
     function animate() {
         requestAnimationFrame(animate);
-        const posArray = geometry.attributes.position.array;
+        const pos = geometry.attributes.position.array;
 
-        if (!isExploded) {
-            // 初始状态：奇点呼吸和疯狂旋转
-            particles.rotation.y += 0.02;
-            const scale = 1 + Math.sin(Date.now() * 0.005) * 0.1;
-            particles.scale.setScalar(scale);
+        if(!isExploded) {
+            particles.rotation.y += 0.01;
+            const s = 1 + Math.sin(Date.now()*0.005)*0.1;
+            particles.scale.setScalar(s);
         } else {
-            // 爆炸状态：粒子穿越特效
-            for (let i = 0; i < PARTICLE_COUNT; i++) {
-                posArray[i*3] += particlePositions[i].vx;
-                posArray[i*3+1] += particlePositions[i].vy;
-                posArray[i*3+2] += particlePositions[i].vz;
-
-                // 循环粒子（营造无尽穿越感）
-                if (posArray[i*3+2] > 200) {
-                    posArray[i*3+2] = -500;
-                }
+            for(let i=0; i<COUNT; i++) {
+                pos[i*3] += particleData[i].vx;
+                pos[i*3+1] += particleData[i].vy;
+                pos[i*3+2] += particleData[i].vz;
+                if(pos[i*3+2] > 200) pos[i*3+2] = -500;
             }
             geometry.attributes.position.needsUpdate = true;
-            particles.rotation.z += 0.001;
         }
-
         renderer.render(scene, camera);
     }
 
-    // 4. 文案处理
-    const messages = [
-        "发现高能引力波讯号...",
-        "坐标：你所在的心动位置",
-        "在这个灰色的世界里",
-        "只有你，是唯一的彩色奇点 ❤️"
-    ];
-
-    function startTyping(index = 0) {
-        if (index < messages.length) {
-            let str = messages[index];
-            let i = 0;
-            typedText.innerHTML += "";
-            const timer = setInterval(() => {
-                typedText.innerHTML = typedText.innerHTML.replace('|', '') + str[i] + '|';
-                i++;
-                if (i >= str.length) {
-                    clearInterval(timer);
-                    typedText.innerHTML = typedText.innerHTML.replace('|', '') + '<br>';
-                    setTimeout(() => startTyping(index + 1), 800);
+    // 文字效果
+    const lines = ["接收到来自银河系的信号...", "正在解析情感波长...", "发现唯一共振频率：妳 ❤️", "其实这颗心，早就偏向你了。"];
+    function showText(idx=0) {
+        if(idx < lines.length) {
+            const div = document.getElementById('typed-text');
+            div.innerHTML = lines[idx];
+            div.style.opacity = 0;
+            let op = 0;
+            const fade = setInterval(() => {
+                op += 0.1; div.style.opacity = op;
+                if(op >= 1) {
+                    clearInterval(fade);
+                    setTimeout(() => showText(idx+1), 2000);
                 }
-            }, 100);
+            }, 50);
         }
     }
 
-    // 5. 点击触发
-    window.onclick = function() {
-        if (isExploded) return;
+    // 全屏点击触发
+    document.getElementById('overlay').onclick = function() {
+        if(isExploded) return;
         
-        bgm.play();
-        isExploded = true;
-        hint.style.display = 'none';
-        
-        if (navigator.vibrate) navigator.vibrate([100, 50, 200]); // 模拟爆炸震动
-        
-        startTyping();
-    };
+        // 尝试播放音乐
+        const bgm = document.getElementById('bgm');
+        bgm.play().catch(() => { console.log("等待交互播放") });
 
-    window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    };
+        // 隐藏遮罩
+        this.style.opacity = 0;
+        setTimeout(() => this.style.display = 'none', 1000);
 
-    init();
-    animate();
+        // 初始化3D并引爆
+        if(typeof THREE !== 'undefined') {
+            initSystem();
+            isExploded = true;
+            showText();
+        } else {
+            alert("信号传输中断，请刷新重试");
+        }
+    };
 </script>
 </body>
 </html>
