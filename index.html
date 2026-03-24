@@ -1,245 +1,688 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>遇见你，是银河赠予我的糖 ✨</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* 界面文字 */
-        .ui-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; text-align: center; pointer-events: none; transition: opacity 1s; }
-        #typed-text { margin-top: 40px; font-size: 22px; color: #fff; line-height: 1.8; text-shadow: 0 0 10px rgba(255,255,255,0.8); min-height: 120px; white-space: pre-line; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>给你的一颗心</title>
+  <style>
+    :root{
+      --bg1:#070711;
+      --bg2:#160b22;
+      --bg3:#2b0f2f;
+      --pink:#ff4d8d;
+      --pink2:#ff7ab6;
+      --rose:#ffd1e6;
+      --text:#fff5fa;
+      --glass: rgba(255,255,255,.08);
+      --line: rgba(255,255,255,.16);
+    }
 
-        /* 加载/提示层 */
-        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffb3c1; }
-        #hint-core { font-size: 26px; color: #ff4d6d; letter-spacing: 5px; text-shadow: 0 0 20px #ff4d6d; animation: glow 2s infinite; cursor: pointer; }
-        #loader-status { margin-top: 15px; font-size: 14px; color: #666; opacity: 0.7; }
+    html,body{
+      margin:0;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,77,141,.18), transparent 28%),
+        radial-gradient(circle at 80% 30%, rgba(122,92,255,.16), transparent 24%),
+        radial-gradient(circle at 50% 90%, rgba(255,122,182,.12), transparent 30%),
+        linear-gradient(160deg, var(--bg1), var(--bg2) 52%, var(--bg3));
+      font-family: "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+      color:var(--text);
+    }
 
-        @keyframes glow {
-            0%, 100% { opacity: 0.8; text-shadow: 0 0 10px #ff4d6d; }
-            50% { opacity: 1; text-shadow: 0 0 30px #ff758c; }
-        }
-    </style>
+    #fx{
+      position:fixed;
+      inset:0;
+      width:100%;
+      height:100%;
+      display:block;
+      z-index:0;
+    }
+
+    .wrap{
+      position:relative;
+      z-index:2;
+      width:100%;
+      height:100%;
+      display:grid;
+      place-items:center;
+      padding:24px;
+      box-sizing:border-box;
+    }
+
+    .card{
+      width:min(92vw, 460px);
+      padding:28px 22px 24px;
+      border:1px solid var(--line);
+      border-radius:28px;
+      background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      backdrop-filter: blur(14px);
+      box-shadow:
+        0 20px 70px rgba(0,0,0,.35),
+        inset 0 1px 0 rgba(255,255,255,.08);
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background:
+        radial-gradient(circle at top left, rgba(255,77,141,.22), transparent 30%),
+        radial-gradient(circle at top right, rgba(122,92,255,.18), transparent 26%),
+        radial-gradient(circle at bottom center, rgba(255,255,255,.08), transparent 35%);
+      pointer-events:none;
+      filter: blur(2px);
+    }
+
+    .title{
+      position:relative;
+      font-size:clamp(24px, 5vw, 36px);
+      line-height:1.15;
+      margin:2px 0 10px;
+      font-weight:800;
+      letter-spacing:.5px;
+      text-shadow:0 0 24px rgba(255,77,141,.25);
+    }
+
+    .subtitle{
+      position:relative;
+      font-size:clamp(14px, 3.6vw, 17px);
+      line-height:1.8;
+      color:rgba(255,245,250,.86);
+      min-height:3.6em;
+      margin:0 auto 20px;
+      max-width: 24em;
+    }
+
+    .hint{
+      position:relative;
+      font-size:13px;
+      color:rgba(255,255,255,.62);
+      margin-top:16px;
+      letter-spacing:.4px;
+    }
+
+    .scene{
+      position:relative;
+      width:240px;
+      height:240px;
+      margin:8px auto 10px;
+      display:grid;
+      place-items:center;
+      perspective:900px;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      cursor:pointer;
+    }
+
+    .halo{
+      position:absolute;
+      width:160px;
+      height:160px;
+      border-radius:50%;
+      border:1px solid rgba(255,122,182,.22);
+      box-shadow:0 0 35px rgba(255,77,141,.16);
+      animation: halo 2.8s ease-in-out infinite;
+    }
+    .halo::before,
+    .halo::after{
+      content:"";
+      position:absolute;
+      inset:-18px;
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,.10);
+      animation: rotate 10s linear infinite;
+    }
+    .halo::after{
+      inset:-34px;
+      animation-duration:14s;
+      opacity:.65;
+    }
+
+    .heart{
+      position:relative;
+      width:112px;
+      height:112px;
+      transform:rotate(-45deg);
+      background:linear-gradient(145deg, #ff86ba, #ff2f78 55%, #ff66a1);
+      box-shadow:
+        0 0 18px rgba(255,77,141,.7),
+        0 0 50px rgba(255,77,141,.35),
+        0 0 90px rgba(255,77,141,.20);
+      animation: beat 1.15s ease-in-out infinite;
+      filter:saturate(1.15);
+    }
+
+    .heart::before,
+    .heart::after{
+      content:"";
+      position:absolute;
+      width:112px;
+      height:112px;
+      border-radius:50%;
+      background:inherit;
+    }
+
+    .heart::before{ top:-56px; left:0; }
+    .heart::after{ left:56px; top:0; }
+
+    .heart-label{
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%) rotate(45deg);
+      z-index:2;
+      text-align:center;
+      width:160px;
+      pointer-events:none;
+      font-weight:800;
+      color:#fff;
+      text-shadow:0 2px 14px rgba(0,0,0,.28);
+    }
+
+    .heart-label .small{
+      display:block;
+      font-size:12px;
+      opacity:.92;
+      letter-spacing:1.4px;
+      margin-bottom:6px;
+    }
+    .heart-label .big{
+      display:block;
+      font-size:22px;
+      letter-spacing:2px;
+    }
+
+    .orbit{
+      position:absolute;
+      inset:0;
+      border-radius:50%;
+      border:1px dashed rgba(255,255,255,.12);
+      animation: rotate 18s linear infinite;
+    }
+    .orbit.two{ inset:18px; animation-direction:reverse; opacity:.8; }
+
+    .floating{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+    }
+
+    .floating span{
+      position:absolute;
+      left:50%;
+      top:50%;
+      font-size:18px;
+      opacity:0;
+      animation: floatUp 3.8s linear infinite;
+      text-shadow:0 0 18px rgba(255,77,141,.35);
+    }
+
+    .floating span:nth-child(1){ animation-delay:.2s; transform:translate(-140px, 90px); }
+    .floating span:nth-child(2){ animation-delay:1.1s; transform:translate(120px, 100px); }
+    .floating span:nth-child(3){ animation-delay:2.0s; transform:translate(-70px, 130px); }
+    .floating span:nth-child(4){ animation-delay:2.7s; transform:translate(90px, 130px); }
+    .floating span:nth-child(5){ animation-delay:1.8s; transform:translate(-170px, 40px); }
+    .floating span:nth-child(6){ animation-delay:3.0s; transform:translate(160px, 50px); }
+
+    .burst{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:4px;
+      height:4px;
+      border-radius:50%;
+      pointer-events:none;
+      background:transparent;
+      transform:translate(-50%,-50%);
+    }
+
+    .burst i{
+      position:absolute;
+      left:0;
+      top:0;
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--pink2);
+      box-shadow:0 0 12px rgba(255,122,182,.9);
+      transform:translate(0,0) scale(1);
+      animation: shoot 900ms ease-out forwards;
+    }
+
+    .cta{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      margin-top:8px;
+      padding:12px 18px;
+      border:none;
+      border-radius:999px;
+      color:#fff;
+      background:linear-gradient(135deg, rgba(255,77,141,.95), rgba(122,92,255,.85));
+      box-shadow:0 12px 30px rgba(255,77,141,.24);
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .2s ease, filter .2s ease;
+    }
+    .cta:hover{ transform:translateY(-1px) scale(1.02); filter:brightness(1.05); }
+    .cta:active{ transform:translateY(1px) scale(.99); }
+
+    .reveal{
+      position:fixed;
+      inset:0;
+      z-index:3;
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at center, rgba(255,77,141,.18), rgba(7,7,17,.72) 48%, rgba(7,7,17,.92) 100%);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .7s ease;
+    }
+
+    .reveal.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    .reveal-box{
+      width:min(90vw, 560px);
+      padding:28px 22px;
+      text-align:center;
+      border-radius:30px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.07);
+      backdrop-filter: blur(18px);
+      box-shadow:0 25px 80px rgba(0,0,0,.48);
+    }
+
+    .reveal-big{
+      margin:0 0 10px;
+      font-size:clamp(28px, 6vw, 44px);
+      font-weight:900;
+      letter-spacing:1px;
+      text-shadow:0 0 28px rgba(255,77,141,.28);
+    }
+
+    .reveal-msg{
+      margin:0 auto;
+      max-width: 24em;
+      line-height:1.9;
+      font-size:clamp(15px, 3.8vw, 18px);
+      color:rgba(255,245,250,.92);
+    }
+
+    .reveal-note{
+      margin-top:18px;
+      font-size:13px;
+      color:rgba(255,255,255,.64);
+    }
+
+    .shine{
+      position:absolute;
+      inset:-20% -30%;
+      background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,.10) 50%, transparent 60%);
+      transform:translateX(-40%) rotate(8deg);
+      animation: sweep 6s linear infinite;
+      pointer-events:none;
+    }
+
+    @keyframes beat{
+      0%,100%{ transform:rotate(-45deg) scale(1); }
+      22%{ transform:rotate(-45deg) scale(1.08); }
+      40%{ transform:rotate(-45deg) scale(.98); }
+      60%{ transform:rotate(-45deg) scale(1.16); }
+    }
+    @keyframes halo{
+      0%,100%{ transform:scale(.96); opacity:.55; }
+      50%{ transform:scale(1.06); opacity:1; }
+    }
+    @keyframes rotate{
+      from{ transform:rotate(0deg); }
+      to{ transform:rotate(360deg); }
+    }
+    @keyframes floatUp{
+      0%{ opacity:0; transform:translate(-50%,-50%) translateY(24px) scale(.85); }
+      15%{ opacity:.9; }
+      100%{ opacity:0; transform:translate(-50%,-50%) translateY(-210px) scale(1.15); }
+    }
+    @keyframes sweep{
+      0%{ transform:translateX(-45%) rotate(8deg); }
+      100%{ transform:translateX(45%) rotate(8deg); }
+    }
+    @keyframes shoot{
+      0%{ opacity:1; transform:translate(0,0) scale(1); }
+      100%{ opacity:0; transform:translate(var(--dx), var(--dy)) scale(.2); }
+    }
+
+    .pulse-ring{
+      position:absolute;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      border:2px solid rgba(255,122,182,.9);
+      box-shadow:0 0 20px rgba(255,122,182,.7);
+      animation:ring 1s ease-out forwards;
+      pointer-events:none;
+    }
+
+    @keyframes ring{
+      0%{ transform:translate(-50%,-50%) scale(.2); opacity:.95; }
+      100%{ transform:translate(-50%,-50%) scale(22); opacity:0; }
+    }
+
+    @media (max-width: 420px){
+      .card{ padding:24px 16px 20px; border-radius:24px; }
+      .scene{ width:220px; height:220px; }
+      .heart{ width:98px; height:98px; }
+      .heart::before,.heart::after{ width:98px; height:98px; }
+      .heart::before{ top:-49px; }
+      .heart::after{ left:49px; }
+    }
+  </style>
 </head>
 <body>
+<canvas id="fx"></canvas>
 
-<div id="loader">
-    <div id="hint-core">量子奇点对接中...</div>
-    <div id="loader-status">系统已锁定，信号搜寻...</div>
+<div class="wrap">
+  <div class="card">
+    <div class="shine"></div>
+    <div class="title" id="title">今晚，把宇宙借给你</div>
+    <div class="subtitle" id="subtitle">点一下中间那颗心，看看会发生什么。</div>
+
+    <div class="scene" id="scene" aria-label="爱心互动区域">
+      <div class="halo"></div>
+      <div class="orbit"></div>
+      <div class="orbit two"></div>
+
+      <div class="floating" aria-hidden="true">
+        <span>✦</span>
+        <span>✦</span>
+        <span>✦</span>
+        <span>✦</span>
+        <span>✦</span>
+        <span>✦</span>
+      </div>
+
+      <div class="heart" id="heart">
+        <div class="heart-label">
+          <span class="small">CLICK</span>
+          <span class="big">LOVE</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="cta" id="cta">点亮这颗心</button>
+    <div class="hint">建议用手机打开，效果更好。</div>
+  </div>
 </div>
 
-<canvas id="canvas"></canvas>
-<div class="ui-overlay" id="ui">
-    <div id="typed-text"></div>
+<div class="reveal" id="reveal">
+  <div class="reveal-box">
+    <div class="reveal-big" id="revealBig">是你呀</div>
+    <p class="reveal-msg" id="revealMsg">本来只是想做个网页，后来发现，所有好看的光，最后都该落到你身上。</p>
+    <div class="reveal-note">再点一次，给你更狠的版本。</div>
+  </div>
 </div>
-
-<script src="https://cdn.bootcdn.net/ajax/libs/three.js/r140/three.min.js"></script>
 
 <script>
-    // --- 核心防卡死检测 ---
-    const hintCore = document.getElementById('hint-core');
-    const loaderStatus = document.getElementById('loader-status');
-    let threejsLoaded = false;
+(() => {
+  const canvas = document.getElementById('fx');
+  const ctx = canvas.getContext('2d');
+  const scene = document.getElementById('scene');
+  const heart = document.getElementById('heart');
+  const title = document.getElementById('title');
+  const subtitle = document.getElementById('subtitle');
+  const cta = document.getElementById('cta');
+  const reveal = document.getElementById('reveal');
+  const revealBig = document.getElementById('revealBig');
+  const revealMsg = document.getElementById('revealMsg');
 
-    // 当脚本成功加载时运行
-    if (typeof THREE !== 'undefined') {
-        threejsLoaded = true;
-        hintCore.innerText = "信号已锁定，请点击开启银河";
-        loaderStatus.innerText = "协议 R140-CHN 运行中";
+  let W = 0, H = 0, dpr = 1;
+  let stars = [];
+  let particles = [];
+  let sparks = [];
+  let stage = 0;
+  let lastTime = 0;
+
+  const stageData = [
+    {
+      title: "今晚，把宇宙借给你",
+      subtitle: "点一下中间那颗心，看看会发生什么。",
+      btn: "点亮这颗心",
+      big: "是你呀",
+      msg: "本来只是想做个网页，后来发现，所有好看的光，最后都该落到你身上。"
+    },
+    {
+      title: "你一出现，背景就该换颜色",
+      subtitle: "再点一次，会出现更明显的告白。",
+      btn: "再来一次",
+      big: "我认真了",
+      msg: "如果心动有声音，那刚才这一秒，应该已经足够吵到你听见了。"
+    },
+    {
+      title: "最后一层：只给你看",
+      subtitle: "这次不是特效，是心意。",
+      btn: "再点一次",
+      big: "送给你",
+      msg: "如果你愿意，我想把今天、明天、以及以后所有能发光的部分，都留给你。"
+    }
+  ];
+
+  function resize() {
+    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    W = canvas.width = Math.floor(innerWidth * dpr);
+    H = canvas.height = Math.floor(innerHeight * dpr);
+    canvas.style.width = innerWidth + 'px';
+    canvas.style.height = innerHeight + 'px';
+
+    stars = Array.from({ length: Math.floor((innerWidth * innerHeight) / 9000) + 70 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: (Math.random() * 1.6 + 0.4) * dpr,
+      a: Math.random(),
+      v: (Math.random() * 0.35 + 0.08) * dpr,
+      hue: 325 + Math.random() * 40
+    }));
+  }
+
+  window.addEventListener('resize', resize, { passive: true });
+  resize();
+
+  function burst(x, y) {
+    const count = 90;
+    const rect = canvas.getBoundingClientRect();
+    const cx = x * dpr;
+    const cy = y * dpr;
+
+    const ring = document.createElement('div');
+    ring.className = 'pulse-ring';
+    ring.style.left = x + 'px';
+    ring.style.top = y + 'px';
+    scene.appendChild(ring);
+    setTimeout(() => ring.remove(), 1000);
+
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.22;
+      const speed = 2.5 + Math.random() * 6.5;
+      const size = 1.5 + Math.random() * 2.8;
+      sparks.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * speed * dpr,
+        vy: Math.sin(angle) * speed * dpr,
+        life: 70 + Math.random() * 28,
+        max: 70 + Math.random() * 28,
+        size,
+        hue: 330 + Math.random() * 38,
+        alpha: 1
+      });
+    }
+  }
+
+  function addHeartBurst(x, y) {
+    const baseX = x, baseY = y;
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = baseX + 'px';
+    wrapper.style.top = baseY + 'px';
+    wrapper.style.zIndex = '4';
+    wrapper.style.pointerEvents = 'none';
+    document.body.appendChild(wrapper);
+
+    const count = 10;
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('div');
+      el.textContent = '❤';
+      el.style.position = 'absolute';
+      el.style.left = '0';
+      el.style.top = '0';
+      el.style.fontSize = (16 + Math.random() * 18) + 'px';
+      el.style.color = `hsl(${330 + Math.random()*20} 100% 75%)`;
+      el.style.textShadow = '0 0 16px rgba(255,122,182,.85)';
+      el.style.transform = 'translate(-50%,-50%)';
+      wrapper.appendChild(el);
+
+      const dx = (Math.random() * 2 - 1) * 170;
+      const dy = -80 - Math.random() * 220;
+      const rot = (Math.random() * 2 - 1) * 180;
+      const dur = 900 + Math.random() * 700;
+      el.animate([
+        { transform: 'translate(-50%,-50%) scale(.75) rotate(0deg)', opacity: 0 },
+        { offset: 0.12, transform: 'translate(-50%,-50%) scale(1.1) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${dx}px, ${dy}px) scale(.3) rotate(${rot}deg)`, opacity: 0 }
+      ], { duration: dur, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+    }
+
+    setTimeout(() => wrapper.remove(), 1800);
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+
+    const time = t * 0.001;
+    const cx = W * 0.5;
+    const cy = H * 0.46;
+
+    // 星星背景
+    for (const s of stars) {
+      s.a += Math.sin(time * 1.7 + s.x * 0.001) * 0.015;
+      const alpha = 0.25 + Math.sin(time * 1.2 + s.x * 0.003 + s.y * 0.004) * 0.18 + s.a * 0.15;
+      ctx.beginPath();
+      ctx.fillStyle = `hsla(${s.hue}, 100%, 78%, ${Math.max(0.08, alpha)})`;
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 连接线
+    for (let i = 0; i < stars.length; i++) {
+      const a = stars[i];
+      for (let j = i + 1; j < Math.min(i + 8, stars.length); j++) {
+        const b = stars[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 170 * dpr) {
+          const op = (1 - dist / (170 * dpr)) * 0.11;
+          ctx.strokeStyle = `rgba(255, 180, 220, ${op})`;
+          ctx.lineWidth = 1 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // 中心光晕
+    const g = ctx.createRadialGradient(cx, cy, 10 * dpr, cx, cy, 210 * dpr);
+    g.addColorStop(0, 'rgba(255,77,141,.24)');
+    g.addColorStop(.35, 'rgba(255,77,141,.12)');
+    g.addColorStop(1, 'rgba(255,77,141,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 210 * dpr, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 爆发粒子
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const p = sparks[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.985;
+      p.vy *= 0.985;
+      p.vy += 0.03 * dpr;
+      p.life -= 1;
+
+      const alpha = Math.max(0, p.life / p.max);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = `hsla(${p.hue}, 100%, 72%, ${alpha})`;
+      ctx.shadowColor = `hsla(${p.hue}, 100%, 70%, ${alpha})`;
+      ctx.shadowBlur = 12 * dpr;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * dpr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      if (p.life <= 0) sparks.splice(i, 1);
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+
+  function setStage(next) {
+    stage = Math.min(next, stageData.length - 1);
+    const d = stageData[stage];
+    title.textContent = d.title;
+    subtitle.textContent = d.subtitle;
+    cta.textContent = d.btn;
+    revealBig.textContent = d.big;
+    revealMsg.textContent = d.msg;
+  }
+
+  function handleAction() {
+    const rect = scene.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    burst(x, y);
+    addHeartBurst(x, y);
+
+    heart.style.animation = 'none';
+    void heart.offsetWidth;
+    heart.style.animation = '';
+
+    if (stage < 2) {
+      setStage(stage + 1);
+      reveal.classList.add('show');
+      setTimeout(() => reveal.classList.remove('show'), 1700);
     } else {
-        loaderStatus.innerText = "无法对接系统核心，请尝试刷新。";
+      reveal.classList.add('show');
+      setTimeout(() => reveal.classList.remove('show'), 2400);
     }
+  }
 
-    // --- 3D 场景与粒子系统设置 ---
-    let scene, camera, renderer, particles, shaderMaterial;
-    let isExploded = false;
-    let explosionStartTime;
-    const COUNT = 10000; // 粒子数量：一万个，视觉冲击力的核心
+  scene.addEventListener('click', handleAction);
+  cta.addEventListener('click', handleAction);
 
-    function init3D() {
-        if (!threejsLoaded) { alert("核心加载失败"); return; }
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.z = 250;
-
-        renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(COUNT * 3);
-        const sizes = new Float32Array(COUNT);
-        const colors = new Float32Array(COUNT * 3);
-        const initialPositions = new Float32Array(COUNT * 3);
-
-        for (let i = 0; i < COUNT; i++) {
-            // 参数方程生成初始的 dense 核心（奇点）
-            const t = Math.random() * Math.PI * 2;
-            const r = Math.pow(Math.random(), 0.5) * 5; 
-            positions[i*3] = Math.sin(t) * r;
-            positions[i*3+1] = Math.cos(t) * r;
-            positions[i*3+2] = (Math.random() - 0.5) * 5;
-            initialPositions[i*3] = positions[i*3];
-            initialPositions[i*3+1] = positions[i*3+1];
-            initialPositions[i*3+2] = positions[i*3+2];
-
-            // 粒子颜色：炽热电光粉/紫色系
-            const color = new THREE.Color();
-            color.setHSL(0.95 + Math.random() * 0.05, 0.9, 0.5 + Math.random() * 0.3);
-            colors[i*3] = color.r; colors[i*3+1] = color.g; colors[i*3+2] = color.b;
-
-            // 粒子大小变化
-            sizes[i] = Math.random() * 2 + 0.5;
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-        geometry.setAttribute('initialPosition', new THREE.BufferAttribute(initialPositions, 3));
-
-        // 究极震撼核心：自定义粒子 Shader (不再需要外部贴图)
-        const vertexShader = `
-            attribute float size;
-            attribute vec3 initialPosition;
-            varying vec3 vColor;
-            varying float vOpacity;
-            uniform float time;
-            uniform float explosionProgress;
-
-            void main() {
-                vColor = color;
-                // 爆炸物理模拟：带尾焰的流星爆炸
-                float pulse = 1.0 + sin(time * 3.0) * 0.05;
-                vec3 finalPosition = initialPosition * (1.0 + explosionProgress * 50.0);
-                finalPosition.z += explosionProgress * 800.0; // 冲向镜头
-
-                // 循环粒子特效（穿越感）
-                if (finalPosition.z > 250.0) finalPosition.z = -1000.0;
-
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPosition, 1.0);
-                
-                // 动态粒子大小：闪烁和渐变
-                gl_PointSize = size * (300.0 / length(finalPosition)) * (1.0 + sin(time * 5.0 + position.x * 0.1) * 0.1);
-                
-                // 动态粒子不透明度
-                vOpacity = 1.0 - clamp((time - 3.0) * 0.2, 0.0, 0.7);
-            }
-        `;
-
-        const fragmentShader = `
-            varying vec3 vColor;
-            varying float vOpacity;
-            uniform float time;
-
-            void main() {
-                // 程序生成的闪烁光点纹理
-                vec2 uv = gl_PointCoord - vec2(0.5);
-                float dist = length(uv);
-                if (dist > 0.5) discard;
-                float alpha = (1.0 - dist * 2.0) * (1.0 + sin(time * 10.0) * 0.1);
-                
-                gl_FragColor = vec4(vColor, alpha * vOpacity * 0.9);
-                
-                // 炽热电光边框
-                float border = smoothstep(0.4, 0.5, dist);
-                gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), border * 0.3);
-            }
-        `;
-
-        shaderMaterial = new THREE.ShaderMaterial({
-            uniforms: { time: { value: 0.0 }, explosionProgress: { value: 0.0 } },
-            vertexShader: vertexShader, fragmentShader: fragmentShader,
-            blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, vertexColors: true
-        });
-
-        particles = new THREE.Points(geometry, shaderMaterial);
-        scene.add(particles);
-
-        window.addEventListener('resize', onWindowResize);
-    }
-
-    // 文案：震撼原子弹
-    const messages = ["量子对接完成。信号稳定。", "在浩瀚的 10^-27 米宇宙弦中...", "我终于在这亿万颗光点里，", "定位到了属于我的那个彩色奇点 ❤️", "点击那一刻，我的世界为你而炸裂。"];
-    let msgIndex = 0;
-    const typedTextDiv = document.getElementById('typed-text');
-
-    function startTyping() {
-        if (!typedTextDiv) return;
-        typedTextDiv.style.opacity = 1;
-        const line = messages[msgIndex];
-        typedTextDiv.innerHTML = "";
-        let i = 0;
-        const timer = setInterval(() => {
-            typedTextDiv.innerHTML += line[i];
-            i++;
-            if (i >= line.length) {
-                clearInterval(timer);
-                setTimeout(() => {
-                    msgIndex++;
-                    if (msgIndex < messages.length) {
-                        typedTextDiv.innerHTML += '<br>';
-                        startTyping();
-                    }
-                }, 1500);
-            }
-        }, 120);
-    }
-
-    // 点击事件逻辑：防卡死与震撼引爆
-    document.getElementById('loader').onclick = function() {
-        if (!threejsLoaded || isExploded) return;
-        isExploded = true;
-        explosionStartTime = Date.now();
-        
-        // 尝试播放（可能被微信拦截，但不要白屏）
-        document.getElementById('bgm').play().catch(e => console.log("Audio play blocked. Wait interaction."));
-
-        // 隐藏遮罩层
-        this.style.opacity = 0;
-        setTimeout(() => this.style.display = 'none', 1000);
-        
-        init3D();
-        animate();
-        startTyping();
-        
-        // 震撼反馈：手机震动
-        if (navigator.vibrate) navigator.vibrate([100, 50, 300]);
-    };
-
-    function animate() {
-        requestAnimationFrame(animate);
-        if (!shaderMaterial) return;
-        const elapsed = (Date.now() - explosionStartTime) / 1000;
-        shaderMaterial.uniforms.time.value = elapsed;
-        
-        // 爆炸进度：快速引爆 -> 缓慢穿越
-        let progress = 0;
-        if (elapsed < 3.0) {
-            progress = Math.pow(elapsed / 3.0, 0.5); // Sqrt 开方实现极速炸裂
-        } else {
-            progress = 1.0 + (elapsed - 3.0) * 0.05; // 缓慢穿越
-        }
-        shaderMaterial.uniforms.explosionProgress.value = progress;
-
-        if (elapsed > 3.0) {
-            particles.rotation.y += 0.005;
-            particles.rotation.x += 0.002;
-        }
-
-        renderer.render(scene, camera);
-    }
-
-    function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    // 最后的BGM（外部NetEase链接作为Fallback，如果还是加载慢，请告诉我，我发一个 base64 的音频数据）
-    // 你可以尝试换一个你觉得最甜的MP3链接替换掉 src
+  // 初始一点微弱漂浮粒子感
+  setInterval(() => {
+    const rect = scene.getBoundingClientRect();
+    const x = rect.left + rect.width / 2 + (Math.random() * 140 - 70);
+    const y = rect.top + rect.height / 2 + (Math.random() * 100 - 50);
+    addHeartBurst(x, y);
+  }, 2200);
+})();
 </script>
-<audio id="bgm" loop preload="auto" src="https://music.163.com/song/media/outer/url?id=1411358329.mp3"></audio>
 </body>
 </html>
