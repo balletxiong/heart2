@@ -52,7 +52,7 @@
   }
 
   .card{
-    width:min(92vw, 520px);
+    width:min(92vw, 560px);
     padding:28px 20px 22px;
     border:1px solid var(--line);
     border-radius:30px;
@@ -127,7 +127,7 @@
   .subtitle{
     position:relative;
     margin:0 auto 18px;
-    min-height:4.6em;
+    min-height:4.2em;
     max-width: 26em;
     line-height:1.9;
     font-size:clamp(14px, 3.8vw, 17px);
@@ -264,13 +264,51 @@
   .floating span:nth-child(5){ animation-delay:1.8s; transform:translate(-170px, 40px); }
   .floating span:nth-child(6){ animation-delay:3.0s; transform:translate(160px, 50px); }
 
+  .log{
+    position:relative;
+    width:min(100%, 520px);
+    height:270px;
+    margin:6px auto 12px;
+    padding:14px 12px;
+    box-sizing:border-box;
+    border-radius:22px;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.05);
+    overflow-y:auto;
+    text-align:left;
+    scroll-behavior:smooth;
+  }
+
+  .line{
+    margin:0 0 10px 0;
+    padding:12px 14px;
+    border-radius:16px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.08);
+    color:rgba(255,247,251,.95);
+    line-height:1.85;
+    font-size:15px;
+    animation:fadeIn .35s ease both;
+  }
+
+  .line.me{
+    background:linear-gradient(135deg, rgba(255,77,141,.16), rgba(122,92,255,.11));
+    border-color:rgba(255,122,182,.18);
+  }
+
+  .line.system{
+    background:rgba(255,255,255,.04);
+    color:rgba(255,255,255,.82);
+    font-size:14px;
+  }
+
   .cta-row{
     position:relative;
     display:flex;
     gap:10px;
     justify-content:center;
     flex-wrap:wrap;
-    margin-top:8px;
+    margin-top:6px;
   }
 
   .cta, .music-btn, .choice-btn{
@@ -312,63 +350,22 @@
 
   .hint{
     position:relative;
-    margin-top:14px;
+    margin-top:12px;
     font-size:13px;
     color:rgba(255,255,255,.64);
     letter-spacing:.3px;
     min-height:1.4em;
   }
 
-  .reveal{
-    position:fixed;
-    inset:0;
-    z-index:3;
-    display:grid;
-    place-items:center;
-    background:
-      radial-gradient(circle at center, rgba(255,77,141,.18), rgba(7,7,17,.70) 48%, rgba(7,7,17,.93) 100%);
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .7s ease;
+  .choice-panel{
+    position:relative;
+    display:none;
+    gap:10px;
+    justify-content:center;
+    margin-top:12px;
+    flex-wrap:wrap;
   }
-  .reveal.show{
-    opacity:1;
-    pointer-events:auto;
-  }
-
-  .reveal-box{
-    width:min(90vw, 560px);
-    padding:30px 22px 24px;
-    text-align:center;
-    border-radius:30px;
-    border:1px solid rgba(255,255,255,.14);
-    background:rgba(255,255,255,.07);
-    backdrop-filter: blur(18px);
-    box-shadow:0 28px 90px rgba(0,0,0,.50);
-  }
-
-  .reveal-big{
-    margin:0 0 12px;
-    font-size:clamp(30px, 6vw, 46px);
-    font-weight:900;
-    letter-spacing:1px;
-    text-shadow:0 0 28px rgba(255,77,141,.28);
-  }
-
-  .reveal-msg{
-    margin:0 auto;
-    max-width: 24em;
-    line-height:1.95;
-    font-size:clamp(15px, 3.8vw, 18px);
-    color:rgba(255,247,251,.92);
-    white-space:pre-line;
-  }
-
-  .reveal-note{
-    margin-top:18px;
-    font-size:13px;
-    color:rgba(255,255,255,.64);
-  }
+  .choice-panel.show{ display:flex; }
 
   .pulse-ring{
     position:absolute;
@@ -388,16 +385,6 @@
     transform:translate(-50%,-50%);
     text-shadow:0 0 16px rgba(255,122,182,.85);
   }
-
-  .choice-panel{
-    position:relative;
-    display:none;
-    gap:10px;
-    justify-content:center;
-    margin-top:14px;
-    flex-wrap:wrap;
-  }
-  .choice-panel.show{ display:flex; }
 
   @keyframes beat{
     0%,100%{ transform:rotate(-45deg) scale(1); }
@@ -426,6 +413,10 @@
     0%{ transform:translate(-50%,-50%) scale(.2); opacity:.95; }
     100%{ transform:translate(-50%,-50%) scale(22); opacity:0; }
   }
+  @keyframes fadeIn{
+    from{ opacity:0; transform:translateY(10px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
 
   @media (max-width: 420px){
     .card{ padding:24px 14px 20px; border-radius:24px; }
@@ -434,11 +425,16 @@
     .heart::before,.heart::after{ width:98px; height:98px; }
     .heart::before{ top:-49px; }
     .heart::after{ left:49px; }
+    .log{ height:290px; }
   }
 </style>
 </head>
 <body>
 <canvas id="fx"></canvas>
+
+<audio id="bgm" preload="auto" loop>
+  <source src="april-encounter.mp3" type="audio/mpeg" />
+</audio>
 
 <div class="wrap">
   <div class="card">
@@ -448,8 +444,8 @@
       <div class="music-status"><span class="dot"></span><span id="musicText">音乐未开启</span></div>
     </div>
 
-    <div class="title" id="title">今晚，把宇宙借给你</div>
-    <div class="subtitle" id="subtitle">点一下中间那颗心，看看它会不会越来越偏向你。</div>
+    <div class="title">今晚，把宇宙借给你</div>
+    <div class="subtitle" id="subtitle">点一下中间那颗心，下面会一句一句出现，不会再抢着消失。</div>
 
     <div class="scene" id="scene" aria-label="爱心互动区域">
       <div class="halo"></div>
@@ -473,8 +469,10 @@
       </div>
     </div>
 
+    <div class="log" id="log" aria-live="polite"></div>
+
     <div class="cta-row">
-      <button class="cta" id="cta">点亮这颗心</button>
+      <button class="cta" id="cta">再听一句</button>
       <button class="music-btn" id="musicBtn">打开甜甜的音乐</button>
     </div>
 
@@ -483,15 +481,7 @@
       <button class="choice-btn" id="noBtn">让我再说一句</button>
     </div>
 
-    <div class="hint" id="hint">每点一次，告白就会更认真一点。</div>
-  </div>
-</div>
-
-<div class="reveal" id="reveal">
-  <div class="reveal-box">
-    <div class="reveal-big" id="revealBig">是你呀</div>
-    <p class="reveal-msg" id="revealMsg">本来只是想做个网页，后来发现，所有好看的光，最后都该落到你身上。</p>
-    <div class="reveal-note" id="revealNote">再点一次，故事会走到最后一页。</div>
+    <div class="hint" id="hint">每点一下，只会多一句，不会把前面的内容盖掉。</div>
   </div>
 </div>
 
@@ -502,58 +492,42 @@
 
   const scene = document.getElementById('scene');
   const heart = document.getElementById('heart');
-  const title = document.getElementById('title');
+  const log = document.getElementById('log');
   const subtitle = document.getElementById('subtitle');
   const cta = document.getElementById('cta');
   const hint = document.getElementById('hint');
-  const reveal = document.getElementById('reveal');
-  const revealBig = document.getElementById('revealBig');
-  const revealMsg = document.getElementById('revealMsg');
-  const revealNote = document.getElementById('revealNote');
-  const musicBtn = document.getElementById('musicBtn');
-  const musicText = document.getElementById('musicText');
   const choicePanel = document.getElementById('choicePanel');
   const yesBtn = document.getElementById('yesBtn');
   const noBtn = document.getElementById('noBtn');
+  const bgm = document.getElementById('bgm');
+  const musicBtn = document.getElementById('musicBtn');
+  const musicText = document.getElementById('musicText');
 
   let W = 0, H = 0, dpr = 1;
   let stars = [];
   let sparks = [];
   let stage = 0;
   let audioOn = false;
+  let usingFallback = false;
   let audioCtx = null;
   let masterGain = null;
-  let musicTimer = null;
+  let synthTimer = null;
 
-  const stageData = [
-    {
-      title: "今晚，把宇宙借给你",
-      subtitle: "点一下中间那颗心，看看它会不会越来越偏向你。",
-      btn: "点亮这颗心",
-      hint: "每点一次，告白就会更认真一点。",
-      big: "是你呀",
-      msg: "本来只是想做个网页，后来发现，所有好看的光，最后都该落到你身上。",
-      note: "再点一次，故事会走到下一页。"
-    },
-    {
-      title: "我有点喜欢这种和你有关的时刻",
-      subtitle: "认识你的时间也许还不算特别长，但我已经很享受有你的时光了。",
-      btn: "继续往下看",
-      hint: "别急，这一层开始，话会更真一点。",
-      big: "我很认真",
-      msg: "我喜欢你的性格，也喜欢你的可爱。\n更重要的是，和你相处的时候，我总会觉得很轻松、很开心。\n我开始期待和你一起经历更多事情，去见更多风景，去留下更多只属于我们的记忆。",
-      note: "如果你也愿意，下一页就把答案写出来。"
-    },
-    {
-      title: "最后一层，只给你看",
-      subtitle: "这次不是特效，是我认真想说的话。",
-      btn: "把答案递给你",
-      hint: "现在轮到你决定要不要接住。",
-      big: "你愿意吗？",
-      msg: "如果我把喜欢说得再直白一点——\n我想更靠近你一点，想更了解你一点，\n也想把以后很多好事，都先想到你。\n所以我想认真问你一句：\n你愿意接受我的爱吗？",
-      note: "点“愿意”，会有更甜的结局。"
-    }
+  const story = [
+    "虽然我们认识的时间还不算很长，但我已经很享受有你的时光了。",
+    "我喜欢你的性格，也喜欢你的可爱。",
+    "和你在一起的时候，很多普通的瞬间都会变得特别。",
+    "我开始期待和你一起去经历更多事情，去聊天，去散步，去看风景，去留下更多只属于我们的记忆。",
+    "所以我想认真问你一句：你愿意接受我的爱吗？"
   ];
+
+  function addLine(text, type = 'me') {
+    const p = document.createElement('div');
+    p.className = `line ${type}`;
+    p.textContent = text;
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+  }
 
   function resize() {
     dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
@@ -707,90 +681,55 @@
 
   requestAnimationFrame(draw);
 
-  function setStage(next) {
-    stage = Math.min(next, stageData.length - 1);
-    const d = stageData[stage];
-    title.textContent = d.title;
-    subtitle.textContent = d.subtitle;
-    cta.textContent = d.btn;
-    hint.textContent = d.hint;
-    revealBig.textContent = d.big;
-    revealMsg.textContent = d.msg;
-    revealNote.textContent = d.note;
-  }
+  function startMusic() {
+    if (audioOn) return;
 
-  function flashReveal(duration=1600) {
-    reveal.classList.add('show');
-    setTimeout(() => reveal.classList.remove('show'), duration);
-  }
+    audioOn = true;
+    musicText.textContent = '音乐准备中';
+    musicBtn.textContent = '关闭音乐';
 
-  function handleAction() {
-    const rect = scene.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
+    bgm.volume = 0.75;
+    const playPromise = bgm.play();
 
-    burst(x, y);
-    addHeartBurst(x, y);
-
-    heart.style.animation = 'none';
-    void heart.offsetWidth;
-    heart.style.animation = '';
-
-    if (stage < 2) {
-      setStage(stage + 1);
-      flashReveal(1600);
-      if (stage === 2) choicePanel.classList.add('show');
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.then(() => {
+        usingFallback = false;
+        musicText.textContent = '音乐播放中';
+      }).catch(() => {
+        startFallbackMusic();
+      });
     } else {
-      flashReveal(2200);
-      choicePanel.classList.add('show');
+      musicText.textContent = '音乐播放中';
     }
-
-    startMusic();
   }
 
-  scene.addEventListener('click', handleAction);
-  cta.addEventListener('click', handleAction);
+  function stopMusic() {
+    audioOn = false;
+    usingFallback = false;
+    musicText.textContent = '音乐未开启';
+    musicBtn.textContent = '打开甜甜的音乐';
 
-  yesBtn.addEventListener('click', () => {
-    const rect = scene.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-    burst(x, y);
-    addHeartBurst(x, y);
+    try {
+      bgm.pause();
+      bgm.currentTime = 0;
+    } catch (e) {}
 
-    revealBig.textContent = "那就别反悔";
-    revealMsg.textContent = "从你点下“愿意”的那一刻开始，这颗心就正式归你了。\n我会把偏心、认真和温柔，都留给你。";
-    revealNote.textContent = "以后我想见的风景，都会想带你一起。";
-    flashReveal(2600);
-    startMusic(true);
-  });
-
-  noBtn.addEventListener('click', () => {
-    revealBig.textContent = "那我再追一次";
-    revealMsg.textContent = "没关系，我可以把刚才那句再说一遍，\n再认真一点，再温柔一点，直到你愿意听见我心动。";
-    revealNote.textContent = "我可以慢一点，但不会停。";
-    flashReveal(2200);
-    startMusic();
-  });
-
-  musicBtn.addEventListener('click', () => {
-    if (!audioOn) {
-      startMusic(true);
-    } else {
-      stopMusic();
+    if (synthTimer) {
+      clearInterval(synthTimer);
+      synthTimer = null;
     }
-  });
+  }
 
   function ensureAudio() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       masterGain = audioCtx.createGain();
-      masterGain.gain.value = 0.08;
+      masterGain.gain.value = 0.07;
       masterGain.connect(audioCtx.destination);
     }
   }
 
-  function playTone(freq, start, dur, type='sine', vol=0.18) {
+  function tone(freq, start, dur, type='sine', vol=0.18) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = type;
@@ -807,55 +746,96 @@
     osc.stop(start + dur + 0.05);
   }
 
-  function startMusic(force=false) {
+  function startFallbackMusic() {
     ensureAudio();
     if (audioCtx.state === 'suspended') audioCtx.resume();
-    if (audioOn && !force) return;
 
-    if (musicTimer) clearInterval(musicTimer);
-    audioOn = true;
-    musicText.textContent = "音乐播放中";
-    musicBtn.textContent = "关闭甜甜的音乐";
+    usingFallback = true;
+    musicText.textContent = '备用轻音乐播放中';
 
-    const bpm = 84;
-    const beat = 60 / bpm;
-    const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-    const melody = [
-      [4,1],[3,1],[2,1],[3,1],
-      [4,1],[5,1],[4,1],[3,1],
-      [2,1],[1,1],[2,1],[3,1],
-      [4,1],[3,1],[2,1],[1,1],
-      [0,2],[2,2],[3,2],[4,2],
-      [3,1],[2,1],[1,2],[0,2]
-    ];
+    if (synthTimer) clearInterval(synthTimer);
 
-    let step = 0;
-    const schedule = () => {
+    const melody = [523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 493.88];
+    let i = 0;
+
+    const playStep = () => {
       const now = audioCtx.currentTime + 0.04;
-      const pattern = melody[step % melody.length];
-      const idx = pattern[0];
-      const len = pattern[1] * beat;
-      const f = scale[Math.max(0, Math.min(idx, scale.length - 1))];
-
-      playTone(f, now, len * 0.92, 'sine', 0.18);
-      playTone(f * 2, now, len * 0.42, 'triangle', 0.045);
-      if (step % 4 === 0) playTone(196.00, now, len * 1.12, 'sine', 0.05);
-      if (step % 8 === 4) playTone(293.66, now, len * 1.10, 'sine', 0.04);
-
-      step++;
+      const f = melody[i % melody.length];
+      tone(f, now, 0.42, 'sine', 0.12);
+      tone(f * 2, now, 0.18, 'triangle', 0.03);
+      if (i % 4 === 0) tone(261.63, now, 0.56, 'sine', 0.04);
+      i++;
     };
 
-    schedule();
-    musicTimer = setInterval(schedule, beat * 1000);
+    playStep();
+    synthTimer = setInterval(playStep, 540);
   }
 
-  function stopMusic() {
-    audioOn = false;
-    musicText.textContent = "音乐未开启";
-    musicBtn.textContent = "打开甜甜的音乐";
-    if (musicTimer) clearInterval(musicTimer);
-    musicTimer = null;
+  function addStoryLine() {
+    if (stage < story.length) {
+      addLine(story[stage], 'me');
+      subtitle.textContent = stage === 0
+        ? '每点一下，只会多一句，不会把前面的内容盖掉。'
+        : '继续点，我会把更直接的话说完。';
+
+      stage++;
+      cta.textContent = stage < story.length ? '再听一句' : '把答案递给你';
+      hint.textContent = stage < story.length
+        ? '你可以慢慢看，前面的内容会一直留着。'
+        : '现在到最后一步了。';
+
+      if (stage === story.length) {
+        choicePanel.classList.add('show');
+        addLine('我不是想把你逼到答案里，我只是想把真心交给你。', 'system');
+      }
+    } else {
+      addLine('我已经把最想说的话都摆在这里了，现在轮到你给我一个答案。', 'system');
+    }
+
+    const rect = scene.getBoundingClientRect();
+    burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    addHeartBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    heart.style.animation = 'none';
+    void heart.offsetWidth;
+    heart.style.animation = '';
+
+    startMusic();
   }
+
+  scene.addEventListener('click', addStoryLine);
+  cta.addEventListener('click', addStoryLine);
+
+  yesBtn.addEventListener('click', () => {
+    addLine('那我就认真开始偏心了。以后很多事，我都想先想到你。', 'me');
+    addLine('从现在起，我会把温柔、认真和偏爱，都留给你。', 'system');
+
+    const rect = scene.getBoundingClientRect();
+    burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    addHeartBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    startMusic();
+  });
+
+  noBtn.addEventListener('click', () => {
+    addLine('没关系，那我再说一遍：我很喜欢你。', 'me');
+    addLine('不是一时兴起，是越靠近越认真。', 'system');
+
+    const rect = scene.getBoundingClientRect();
+    burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    addHeartBurst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    startMusic();
+  });
+
+  musicBtn.addEventListener('click', () => {
+    if (!audioOn) {
+      startMusic();
+    } else {
+      stopMusic();
+    }
+  });
+
+  setTimeout(() => {
+    addLine('先点一下中间那颗心，看看它今天会不会格外偏向你。', 'system');
+  }, 180);
 
   setInterval(() => {
     const rect = scene.getBoundingClientRect();
