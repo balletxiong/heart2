@@ -3,176 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>一份特别的宇宙档案 ✨</title>
+    <title>遇见你，是银河赠予我的糖 ✨</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
-        #canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* 覆盖层 */
-        #overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.8); transition: opacity 1s;
-        }
+        /* 界面文字 */
+        .ui-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; text-align: center; pointer-events: none; transition: opacity 1s; }
+        #typed-text { margin-top: 40px; font-size: 22px; color: #fff; line-height: 1.8; text-shadow: 0 0 10px rgba(255,255,255,0.8); min-height: 120px; white-space: pre-line; }
 
-        #hint-text {
-            color: #ffb3c1; font-size: 22px; letter-spacing: 5px;
-            text-shadow: 0 0 15px #ff4d6d; animation: pulse 2s infinite;
-            cursor: pointer;
-        }
+        /* 加载/提示层 */
+        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #ffb3c1; }
+        #hint-core { font-size: 26px; color: #ff4d6d; letter-spacing: 5px; text-shadow: 0 0 20px #ff4d6d; animation: glow 2s infinite; cursor: pointer; }
+        #loader-status { margin-top: 15px; font-size: 14px; color: #666; opacity: 0.7; }
 
-        #typed-text {
-            position: absolute; top: 60%; width: 80%;
-            color: #fff; font-size: 20px; text-align: center;
-            line-height: 1.8; z-index: 101; pointer-events: none;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-        }
-
-        /* 加载提示 */
-        #loader {
-            position: fixed; top: 10px; width: 100%; text-align: center;
-            color: #444; font-size: 12px; z-index: 102;
+        @keyframes glow {
+            0%, 100% { opacity: 0.8; text-shadow: 0 0 10px #ff4d6d; }
+            50% { opacity: 1; text-shadow: 0 0 30px #ff758c; }
         }
     </style>
 </head>
 <body>
 
-<div id="loader">系统信号对接中...</div>
-
-<div id="overlay">
-    <div id="hint-text">「 触 碰 屏 幕 接收 讯 号 」</div>
+<div id="loader">
+    <div id="hint-core">量子奇点对接中...</div>
+    <div id="loader-status">系统已锁定，信号搜寻...</div>
 </div>
 
-<div id="typed-text"></div>
+<canvas id="canvas"></canvas>
+<div class="ui-overlay" id="ui">
+    <div id="typed-text"></div>
+</div>
 
-<audio id="bgm" loop src="https://music.163.com/song/media/outer/url?id=1411358329.mp3"></audio>
-
-<script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/three.js/r128/three.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/three.js/r140/three.min.js"></script>
 
 <script>
-    let scene, camera, renderer, particles, geometry;
+    // --- 核心防卡死检测 ---
+    const hintCore = document.getElementById('hint-core');
+    const loaderStatus = document.getElementById('loader-status');
+    let threejsLoaded = false;
+
+    // 当脚本成功加载时运行
+    if (typeof THREE !== 'undefined') {
+        threejsLoaded = true;
+        hintCore.innerText = "信号已锁定，请点击开启银河";
+        loaderStatus.innerText = "协议 R140-CHN 运行中";
+    } else {
+        loaderStatus.innerText = "无法对接系统核心，请尝试刷新。";
+    }
+
+    // --- 3D 场景与粒子系统设置 ---
+    let scene, camera, renderer, particles, shaderMaterial;
     let isExploded = false;
-    let particleData = [];
-    const COUNT = 15000; // 优化粒子数量，兼顾震撼与流畅
+    let explosionStartTime;
+    const COUNT = 10000; // 粒子数量：一万个，视觉冲击力的核心
 
-    // 确保页面加载完成后执行
-    window.onload = function() {
-        document.getElementById('loader').innerText = "信号已锁定，请点击";
-    };
-
-    function initSystem() {
+    function init3D() {
+        if (!threejsLoaded) { alert("核心加载失败"); return; }
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
-        camera.position.z = 150;
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 250;
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.body.appendChild(renderer.domElement);
 
-        geometry = new THREE.BufferGeometry();
+        const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(COUNT * 3);
+        const sizes = new Float32Array(COUNT);
         const colors = new Float32Array(COUNT * 3);
+        const initialPositions = new Float32Array(COUNT * 3);
 
-        for(let i=0; i<COUNT; i++) {
-            // 初始：汇聚成一个跳动的奇点
+        for (let i = 0; i < COUNT; i++) {
+            // 参数方程生成初始的 dense 核心（奇点）
             const t = Math.random() * Math.PI * 2;
-            const x = 16 * Math.pow(Math.sin(t), 3);
-            const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-            
-            positions[i*3] = x * 0.1;
-            positions[i*3+1] = y * 0.1;
-            positions[i*3+2] = (Math.random()-0.5) * 5;
+            const r = Math.pow(Math.random(), 0.5) * 5; 
+            positions[i*3] = Math.sin(t) * r;
+            positions[i*3+1] = Math.cos(t) * r;
+            positions[i*3+2] = (Math.random() - 0.5) * 5;
+            initialPositions[i*3] = positions[i*3];
+            initialPositions[i*3+1] = positions[i*3+1];
+            initialPositions[i*3+2] = positions[i*3+2];
 
-            // 存储爆炸向量
-            particleData.push({
-                vx: (Math.random()-0.5) * 12,
-                vy: (Math.random()-0.5) * 12,
-                vz: Math.random() * 15 + 2
-            });
+            // 粒子颜色：炽热电光粉/紫色系
+            const color = new THREE.Color();
+            color.setHSL(0.95 + Math.random() * 0.05, 0.9, 0.5 + Math.random() * 0.3);
+            colors[i*3] = color.r; colors[i*3+1] = color.g; colors[i*3+2] = color.b;
 
-            const col = new THREE.Color();
-            col.setHSL(0.95, 0.8, 0.5 + Math.random()*0.3);
-            colors[i*3] = col.r; colors[i*3+1] = col.g; colors[i*3+2] = col.b;
+            // 粒子大小变化
+            sizes[i] = Math.random() * 2 + 0.5;
         }
 
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+        geometry.setAttribute('initialPosition', new THREE.BufferAttribute(initialPositions, 3));
 
-        const material = new THREE.PointsMaterial({
-            size: 1.5, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true
+        // 究极震撼核心：自定义粒子 Shader (不再需要外部贴图)
+        const vertexShader = `
+            attribute float size;
+            attribute vec3 initialPosition;
+            varying vec3 vColor;
+            varying float vOpacity;
+            uniform float time;
+            uniform float explosionProgress;
+
+            void main() {
+                vColor = color;
+                // 爆炸物理模拟：带尾焰的流星爆炸
+                float pulse = 1.0 + sin(time * 3.0) * 0.05;
+                vec3 finalPosition = initialPosition * (1.0 + explosionProgress * 50.0);
+                finalPosition.z += explosionProgress * 800.0; // 冲向镜头
+
+                // 循环粒子特效（穿越感）
+                if (finalPosition.z > 250.0) finalPosition.z = -1000.0;
+
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPosition, 1.0);
+                
+                // 动态粒子大小：闪烁和渐变
+                gl_PointSize = size * (300.0 / length(finalPosition)) * (1.0 + sin(time * 5.0 + position.x * 0.1) * 0.1);
+                
+                // 动态粒子不透明度
+                vOpacity = 1.0 - clamp((time - 3.0) * 0.2, 0.0, 0.7);
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec3 vColor;
+            varying float vOpacity;
+            uniform float time;
+
+            void main() {
+                // 程序生成的闪烁光点纹理
+                vec2 uv = gl_PointCoord - vec2(0.5);
+                float dist = length(uv);
+                if (dist > 0.5) discard;
+                float alpha = (1.0 - dist * 2.0) * (1.0 + sin(time * 10.0) * 0.1);
+                
+                gl_FragColor = vec4(vColor, alpha * vOpacity * 0.9);
+                
+                // 炽热电光边框
+                float border = smoothstep(0.4, 0.5, dist);
+                gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(1.0), border * 0.3);
+            }
+        `;
+
+        shaderMaterial = new THREE.ShaderMaterial({
+            uniforms: { time: { value: 0.0 }, explosionProgress: { value: 0.0 } },
+            vertexShader: vertexShader, fragmentShader: fragmentShader,
+            blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, vertexColors: true
         });
 
-        particles = new THREE.Points(geometry, material);
+        particles = new THREE.Points(geometry, shaderMaterial);
         scene.add(particles);
 
-        animate();
+        window.addEventListener('resize', onWindowResize);
     }
+
+    // 文案：震撼原子弹
+    const messages = ["量子对接完成。信号稳定。", "在浩瀚的 10^-27 米宇宙弦中...", "我终于在这亿万颗光点里，", "定位到了属于我的那个彩色奇点 ❤️", "点击那一刻，我的世界为你而炸裂。"];
+    let msgIndex = 0;
+    const typedTextDiv = document.getElementById('typed-text');
+
+    function startTyping() {
+        if (!typedTextDiv) return;
+        typedTextDiv.style.opacity = 1;
+        const line = messages[msgIndex];
+        typedTextDiv.innerHTML = "";
+        let i = 0;
+        const timer = setInterval(() => {
+            typedTextDiv.innerHTML += line[i];
+            i++;
+            if (i >= line.length) {
+                clearInterval(timer);
+                setTimeout(() => {
+                    msgIndex++;
+                    if (msgIndex < messages.length) {
+                        typedTextDiv.innerHTML += '<br>';
+                        startTyping();
+                    }
+                }, 1500);
+            }
+        }, 120);
+    }
+
+    // 点击事件逻辑：防卡死与震撼引爆
+    document.getElementById('loader').onclick = function() {
+        if (!threejsLoaded || isExploded) return;
+        isExploded = true;
+        explosionStartTime = Date.now();
+        
+        // 尝试播放（可能被微信拦截，但不要白屏）
+        document.getElementById('bgm').play().catch(e => console.log("Audio play blocked. Wait interaction."));
+
+        // 隐藏遮罩层
+        this.style.opacity = 0;
+        setTimeout(() => this.style.display = 'none', 1000);
+        
+        init3D();
+        animate();
+        startTyping();
+        
+        // 震撼反馈：手机震动
+        if (navigator.vibrate) navigator.vibrate([100, 50, 300]);
+    };
 
     function animate() {
         requestAnimationFrame(animate);
-        const pos = geometry.attributes.position.array;
-
-        if(!isExploded) {
-            particles.rotation.y += 0.01;
-            const s = 1 + Math.sin(Date.now()*0.005)*0.1;
-            particles.scale.setScalar(s);
+        if (!shaderMaterial) return;
+        const elapsed = (Date.now() - explosionStartTime) / 1000;
+        shaderMaterial.uniforms.time.value = elapsed;
+        
+        // 爆炸进度：快速引爆 -> 缓慢穿越
+        let progress = 0;
+        if (elapsed < 3.0) {
+            progress = Math.pow(elapsed / 3.0, 0.5); // Sqrt 开方实现极速炸裂
         } else {
-            for(let i=0; i<COUNT; i++) {
-                pos[i*3] += particleData[i].vx;
-                pos[i*3+1] += particleData[i].vy;
-                pos[i*3+2] += particleData[i].vz;
-                if(pos[i*3+2] > 200) pos[i*3+2] = -500;
-            }
-            geometry.attributes.position.needsUpdate = true;
+            progress = 1.0 + (elapsed - 3.0) * 0.05; // 缓慢穿越
         }
+        shaderMaterial.uniforms.explosionProgress.value = progress;
+
+        if (elapsed > 3.0) {
+            particles.rotation.y += 0.005;
+            particles.rotation.x += 0.002;
+        }
+
         renderer.render(scene, camera);
     }
 
-    // 文字效果
-    const lines = ["接收到来自银河系的信号...", "正在解析情感波长...", "发现唯一共振频率：妳 ❤️", "其实这颗心，早就偏向你了。"];
-    function showText(idx=0) {
-        if(idx < lines.length) {
-            const div = document.getElementById('typed-text');
-            div.innerHTML = lines[idx];
-            div.style.opacity = 0;
-            let op = 0;
-            const fade = setInterval(() => {
-                op += 0.1; div.style.opacity = op;
-                if(op >= 1) {
-                    clearInterval(fade);
-                    setTimeout(() => showText(idx+1), 2000);
-                }
-            }, 50);
-        }
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // 全屏点击触发
-    document.getElementById('overlay').onclick = function() {
-        if(isExploded) return;
-        
-        // 尝试播放音乐
-        const bgm = document.getElementById('bgm');
-        bgm.play().catch(() => { console.log("等待交互播放") });
-
-        // 隐藏遮罩
-        this.style.opacity = 0;
-        setTimeout(() => this.style.display = 'none', 1000);
-
-        // 初始化3D并引爆
-        if(typeof THREE !== 'undefined') {
-            initSystem();
-            isExploded = true;
-            showText();
-        } else {
-            alert("信号传输中断，请刷新重试");
-        }
-    };
+    // 最后的BGM（外部NetEase链接作为Fallback，如果还是加载慢，请告诉我，我发一个 base64 的音频数据）
+    // 你可以尝试换一个你觉得最甜的MP3链接替换掉 src
 </script>
+<audio id="bgm" loop preload="auto" src="https://music.163.com/song/media/outer/url?id=1411358329.mp3"></audio>
 </body>
 </html>
